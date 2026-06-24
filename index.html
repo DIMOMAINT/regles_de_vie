@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Générateur d'image texte</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #F7F6F3;
+    --surface: #ffffff;
+    --border: #E4E2DC;
+    --text: #1A1A18;
+    --muted: #9A9890;
+    --accent: #1A1A18;
+    --radius: 14px;
+    --shadow: 0 2px 20px rgba(0,0,0,0.07);
+  }
+
+  html, body {
+    min-height: 100vh;
+    background: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 400;
+    color: var(--text);
+  }
+
+  /* ── Layout ── */
+  header {
+    padding: 48px 24px 0;
+    text-align: center;
+  }
+
+  header h1 {
+    font-size: clamp(1.5rem, 4vw, 2.4rem);
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    color: var(--text);
+  }
+
+  header p {
+    margin-top: 10px;
+    font-size: 0.95rem;
+    color: var(--muted);
+    font-weight: 300;
+  }
+
+  main {
+    max-width: 580px;
+    margin: 36px auto 64px;
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow);
+  }
+
+  .field-label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  /* ── Textarea ── */
+  .textarea-wrap { position: relative; }
+
+  textarea {
+    width: 100%;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 400;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px 36px;
+    resize: none;
+    outline: none;
+    color: var(--text);
+    background: #FAFAF8;
+    line-height: 1.55;
+    transition: border-color 0.18s;
+    height: 100px;
+  }
+  textarea::placeholder { color: #C8C6BF; }
+  textarea:focus { border-color: #999890; background: #fff; }
+
+  .char-counter {
+    position: absolute;
+    bottom: 12px;
+    right: 14px;
+    font-size: 0.75rem;
+    color: var(--muted);
+    pointer-events: none;
+    transition: color 0.15s;
+  }
+  .char-counter.over { color: #D44; }
+
+  /* ── Format selector ── */
+  .format-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .fmt-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 14px 8px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    background: #FAFAF8;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .fmt-btn:hover { border-color: #aaa; background: #fff; }
+  .fmt-btn.active {
+    border-color: var(--text);
+    background: var(--text);
+    color: #fff;
+  }
+
+  .fmt-icon {
+    display: block;
+    border: 2px solid currentColor;
+    background: transparent;
+    opacity: 0.6;
+  }
+  .fmt-icon.landscape { width: 32px; height: 18px; border-radius: 3px; }
+  .fmt-icon.square    { width: 24px; height: 24px; border-radius: 3px; }
+  .fmt-icon.portrait  { width: 16px; height: 28px; border-radius: 3px; }
+
+  .fmt-name {
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-align: center;
+    line-height: 1.3;
+  }
+  .fmt-dim {
+    font-size: 0.65rem;
+    opacity: 0.5;
+    text-align: center;
+  }
+
+  /* ── Buttons ── */
+  .actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn-generate {
+    flex: 1;
+    padding: 14px 20px;
+    border: none;
+    border-radius: 10px;
+    background: var(--text);
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 400;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    letter-spacing: 0.01em;
+  }
+  .btn-generate:hover { opacity: 0.82; }
+  .btn-generate:active { transform: scale(0.98); }
+
+  .btn-download {
+    padding: 14px 18px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    white-space: nowrap;
+    display: none;
+  }
+  .btn-download:hover { border-color: #aaa; }
+  .btn-download.show { display: block; }
+
+  /* ── Preview ── */
+  .preview-card {
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .preview-card.show { display: flex; }
+
+  canvas {
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+    display: block;
+  }
+
+  .color-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  .color-dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ── Footer ── */
+  footer {
+    text-align: center;
+    padding: 0 24px 40px;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  @media (max-width: 420px) {
+    header { padding-top: 32px; }
+    .card { padding: 18px; }
+    .format-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Les règles de vie chez DimoMaint</h1>
+  <p>Écrivez votre texte pour générer une image partageable !</p>
+</header>
+
+<main>
+
+  <!-- Texte -->
+  <div class="card">
+    <label class="field-label" for="txt">Votre texte</label>
+    <div class="textarea-wrap">
+      <textarea id="txt" placeholder="Saisissez votre phrase ici… (90 caractères max)" maxlength="90" rows="3"></textarea>
+      <span class="char-counter" id="counter">0 / 90</span>
+    </div>
+  </div>
+
+  <!-- Format -->
+  <div class="card">
+    <span class="field-label">Format de l'image</span>
+    <div class="format-grid" id="fmtGrid">
+      <button class="fmt-btn active" data-w="1200" data-h="630">
+        <span class="fmt-icon landscape"></span>
+        <span class="fmt-name">Bannière</span>
+        <span class="fmt-dim">1200 × 630</span>
+      </button>
+      <button class="fmt-btn" data-w="1080" data-h="1080">
+        <span class="fmt-icon square"></span>
+        <span class="fmt-name">Carré</span>
+        <span class="fmt-dim">1080 × 1080</span>
+      </button>
+      <button class="fmt-btn" data-w="1080" data-h="1920">
+        <span class="fmt-icon portrait"></span>
+        <span class="fmt-name">Story</span>
+        <span class="fmt-dim">1080 × 1920</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="actions">
+    <button class="btn-generate" id="genBtn">Générer l'image</button>
+    <button class="btn-download" id="dlBtn">↓ Télécharger</button>
+  </div>
+
+  <!-- Preview -->
+  <div class="preview-card" id="previewCard">
+    <canvas id="canvas"></canvas>
+    <div class="color-badge">
+      <span class="color-dot" id="colorDot"></span>
+      <span id="colorName"></span>
+    </div>
+  </div>
+
+</main>
+
+<footer>Outil gratuit — fonctionne entièrement dans votre navigateur, sans envoi de données.</footer>
+
+<script>
+const COLORS = [
+  { bg: '#C0392B', name: 'Rouge grenat' },
+  { bg: '#E67E22', name: 'Orange brûlé' },
+  { bg: '#F39C12', name: 'Ambre doré' },
+  { bg: '#27AE60', name: 'Vert émeraude' },
+  { bg: '#16A085', name: 'Vert sarcelle' },
+  { bg: '#2980B9', name: 'Bleu azur' },
+  { bg: '#8E44AD', name: 'Violet royal' },
+  { bg: '#D35400', name: 'Terracotta' },
+  { bg: '#1ABC9C', name: 'Turquoise' },
+  { bg: '#2C3E50', name: 'Bleu nuit' },
+  { bg: '#6C5CE7', name: 'Indigo doux' },
+  { bg: '#00B894', name: 'Menthe vive' },
+  { bg: '#E84393', name: 'Rose vif' },
+  { bg: '#0984E3', name: 'Bleu ciel' },
+  { bg: '#B71540', name: 'Carmin' },
+  { bg: '#079992', name: 'Jade' },
+  { bg: '#EE5A24', name: 'Mandarine' },
+  { bg: '#5F27CD', name: 'Prune' },
+  { bg: '#2d3436', name: 'Anthracite' },
+  { bg: '#6D4C41', name: 'Brun cacao' },
+  { bg: '#37474F', name: 'Gris ardoise' },
+  { bg: '#00838F', name: 'Cyan profond' },
+];
+
+let lastColor = null;
+let W = 1200, H = 630;
+
+const txtEl    = document.getElementById('txt');
+const counter  = document.getElementById('counter');
+const genBtn   = document.getElementById('genBtn');
+const dlBtn    = document.getElementById('dlBtn');
+const canvas   = document.getElementById('canvas');
+const ctx      = canvas.getContext('2d');
+const preview  = document.getElementById('previewCard');
+const colorDot = document.getElementById('colorDot');
+const colorName= document.getElementById('colorName');
+
+/* Counter */
+txtEl.addEventListener('input', () => {
+  const n = txtEl.value.length;
+  counter.textContent = n + ' / 90';
+  counter.className = 'char-counter' + (n >= 90 ? ' over' : '');
+});
+
+/* Format */
+document.getElementById('fmtGrid').addEventListener('click', e => {
+  const btn = e.target.closest('.fmt-btn');
+  if (!btn) return;
+  document.querySelectorAll('.fmt-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  W = +btn.dataset.w;
+  H = +btn.dataset.h;
+});
+
+/* Pick distinct color */
+function pickColor() {
+  const pool = COLORS.filter(c => c !== lastColor);
+  const c = pool[Math.floor(Math.random() * pool.length)];
+  lastColor = c;
+  return c;
+}
+
+/* Wrap text */
+function wrap(ctx, text, maxW) {
+  const words = text.split(' ');
+  const lines = [];
+  let line = '';
+  for (const w of words) {
+    const test = line ? line + ' ' + w : w;
+    if (ctx.measureText(test).width > maxW && line) {
+      lines.push(line);
+      line = w;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+/* Generate */
+genBtn.addEventListener('click', () => {
+  const text = txtEl.value.trim();
+  if (!text) { txtEl.focus(); return; }
+
+  const color = pickColor();
+  canvas.width  = W;
+  canvas.height = H;
+
+  /* Background */
+  ctx.fillStyle = color.bg;
+  ctx.fillRect(0, 0, W, H);
+
+  /* Very subtle vignette */
+  const vig = ctx.createRadialGradient(W/2, H/2, H * 0.2, W/2, H/2, H * 0.9);
+  vig.addColorStop(0, 'rgba(0,0,0,0)');
+  vig.addColorStop(1, 'rgba(0,0,0,0.18)');
+  ctx.fillStyle = vig;
+  ctx.fillRect(0, 0, W, H);
+
+  /* Text */
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const padX = W * 0.1;
+  const maxW2 = W - padX * 2;
+
+  /* Auto font size: start big, shrink until fits in ≤4 lines */
+  let fs = Math.round(W / 7);
+  ctx.font = `400 ${fs}px 'DM Sans', sans-serif`;
+  let lines = wrap(ctx, text, maxW2);
+
+  while (lines.length > 4 && fs > 28) {
+    fs -= 4;
+    ctx.font = `400 ${fs}px 'DM Sans', sans-serif`;
+    lines = wrap(ctx, text, maxW2);
+  }
+
+  const lh = fs * 1.42;
+  const totalH2 = lh * lines.length;
+  const startY = H / 2 - totalH2 / 2 + lh / 2;
+
+  lines.forEach((l, i) => ctx.fillText(l, W / 2, startY + i * lh));
+
+  /* Show preview */
+  preview.classList.add('show');
+  dlBtn.classList.add('show');
+  colorDot.style.background = color.bg;
+  colorName.textContent = color.name;
+});
+
+/* Download */
+dlBtn.addEventListener('click', () => {
+  const slug = txtEl.value.trim().slice(0, 28).replace(/\s+/g, '-').replace(/[^\w-]/g, '') || 'image';
+  const a = document.createElement('a');
+  a.download = `image-${slug}.png`;
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+});
+</script>
+</body>
+</html>
